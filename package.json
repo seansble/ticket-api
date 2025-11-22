@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "puppeteer-core": "^20.8.1",
-    "@sparticuz/chromium": "119.0.0"
+    "puppeteer-core": "^22.0.0",
+    "@sparticuz/chromium": "^123.0.1"
   }
 }
