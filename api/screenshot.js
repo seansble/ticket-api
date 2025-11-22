@@ -1,89 +1,89 @@
-import chrome from 'chrome-aws-lambda';
-import puppeteer from 'puppeteer-core';
+// api/screenshot.js
+const chrome = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer-core');
 
-export default async function handler(req, res) {
-  // CORS 허용
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+module.exports = async (req, res) => {
+  const { url, selector } = req.query;
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  // 1) 기본 검증
+  if (!url) {
+    res.status(400).json({ error: 'url 파라미터가 필요합니다.' });
+    return;
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  // 2) 간단 화이트리스트 (sudanghelp 도메인만 허용)
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.endsWith('sudanghelp.co.kr')) {
+      res.status(400).json({ error: '허용되지 않은 도메인입니다.' });
+      return;
+    }
+  } catch (e) {
+    res.status(400).json({ error: '유효하지 않은 URL입니다.' });
+    return;
   }
 
   let browser = null;
 
   try {
-    const { html, width = 320, height = 430 } = req.body;
-
-    if (!html) {
-      return res.status(400).json({ error: 'HTML is required' });
-    }
-
-    console.log('Launching browser...');
-
-    // chrome-aws-lambda 사용
+    // 3) Headless Chrome 실행
     browser = await puppeteer.launch({
       args: chrome.args,
+      executablePath: await chrome.executablePath,  // chrome-aws-lambda 전용
+      headless: chrome.headless,
       defaultViewport: {
-        width: parseInt(width),
-        height: parseInt(height),
-        deviceScaleFactor: 3
-      },
-      executablePath: await chrome.executablePath(),
-      headless: chrome.headless
+        width: 900,
+        height: 450,
+        deviceScaleFactor: 2
+      }
     });
-
-    console.log('Browser launched successfully');
 
     const page = await browser.newPage();
 
-    // HTML 설정
-    await page.setContent(html, {
-      waitUntil: ['domcontentloaded', 'networkidle0'],
+    // 4) 페이지 이동
+    await page.goto(url, {
+      waitUntil: 'networkidle2',
       timeout: 30000
     });
 
-    console.log('Content loaded');
-
-    // 폰트 로딩 대기
-    await page.waitForTimeout(500);
-
-    // 스크린샷
-    const screenshot = await page.screenshot({
-      type: 'png',
-      omitBackground: true
+    // 5) 폰트 로딩 대기
+    await page.evaluate(async () => {
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
     });
 
-    console.log('Screenshot taken successfully');
+    // 6) 특정 요소만 캡처
+    let buffer;
+    if (selector) {
+      const el = await page.$(selector);
+      if (!el) {
+        throw new Error(selector "${selector}" 를 찾을 수 없습니다.);
+      }
+      buffer = await el.screenshot({ type: 'png' });
+    } else {
+      buffer = await page.screenshot({ type: 'png', fullPage: false });
+    }
 
     await browser.close();
     browser = null;
 
-    // PNG 반환
+    // 7) PNG 반환
     res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'public, max-age=31536000');
-    return res.send(screenshot);
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(200).send(buffer);
+  } catch (err) {
+    console.error('screenshot error:', err);
 
-  } catch (error) {
-    console.error('Screenshot error:', error);
-    
     if (browser) {
       try {
         await browser.close();
-      } catch (closeError) {
-        console.error('Error closing browser:', closeError);
-      }
+      } catch (_) {}
     }
 
-    return res.status(500).json({ 
-      error: 'Failed to generate screenshot',
-      message: error.message,
-      stack: error.stack
+    res.status(500).json({
+      error: 'screenshot 실패',
+      detail: String(err)
     });
   }
-}
+};
