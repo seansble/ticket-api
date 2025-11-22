@@ -34,7 +34,7 @@ export default async function handler(req, res) {
         height: parseInt(height),
         deviceScaleFactor: 3
       },
-      executablePath: await chrome.executablePath,
+      executablePath: await chrome.executablePath(),
       headless: chrome.headless
     });
 
