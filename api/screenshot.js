@@ -1,5 +1,5 @@
 // api/screenshot.js
-const chromium = require('@sparticuz/chromium');
+const chrome = require('chrome-aws-lambda');
 const puppeteer = require('puppeteer-core');
 
 module.exports = async (req, res) => {
@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
+  
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // 2) 간단 화이트리스트 (sudanghelp 도메인만 허용)
+  // 2) 간단 화이트리스트
   try {
     const parsed = new URL(url);
     if (!parsed.hostname.endsWith('sudanghelp.co.kr')) {
@@ -35,14 +35,11 @@ module.exports = async (req, res) => {
   let browser = null;
 
   try {
-    // 3) Headless Chrome 실행 (Sparticuz)
-    //    ※ executablePath는 '함수'라서 () 필수
-    const executablePath = await chromium.executablePath();
-
+    // 3) Headless Chrome 실행
     browser = await puppeteer.launch({
-      args: chromium.args,
-      executablePath,
-      headless: chromium.headless,
+      args: chrome.args,
+      executablePath: await chrome.executablePath(),  // ← 괄호!
+      headless: chrome.headless,
       defaultViewport: {
         width: 900,
         height: 450,
@@ -84,6 +81,7 @@ module.exports = async (req, res) => {
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'no-store');
     res.status(200).send(buffer);
+    
   } catch (err) {
     console.error('screenshot error:', err);
 
