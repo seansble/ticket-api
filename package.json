@@ -1,9 +1,10 @@
 {
-  "name": "ticket-api",
+  "name": "ticket-screenshot-service",
   "version": "1.0.0",
-  "type": "module",
+  "main": "index.js",
+  "license": "MIT",
   "dependencies": {
-    "chrome-aws-lambda": "^10.1.0",
-    "puppeteer-core": "^10.4.0"
+    "puppeteer-core": "^10.4.0",
+    "chrome-aws-lambda": "^10.1.0"
   }
 }
