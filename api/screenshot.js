@@ -3,6 +3,15 @@ const chrome = require('chrome-aws-lambda');
 const puppeteer = require('puppeteer-core');
 
 module.exports = async (req, res) => {
+  // CORS 헤더
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   const { url, selector } = req.query;
 
   // 1) 기본 검증
