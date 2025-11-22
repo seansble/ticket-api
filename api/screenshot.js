@@ -1,5 +1,5 @@
 // api/screenshot.js
-const chrome = require('chrome-aws-lambda');
+const chromium = require('@sparticuz/chromium');
 const puppeteer = require('puppeteer-core');
 
 module.exports = async (req, res) => {
@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
+
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -35,11 +35,14 @@ module.exports = async (req, res) => {
   let browser = null;
 
   try {
-    // 3) Headless Chrome 실행
+    // 3) Headless Chrome 실행 (Sparticuz)
+    //    ※ executablePath는 '함수'라서 () 필수
+    const executablePath = await chromium.executablePath();
+
     browser = await puppeteer.launch({
-      args: chrome.args,
-      executablePath: await chrome.executablePath,
-      headless: chrome.headless,
+      args: chromium.args,
+      executablePath,
+      headless: chromium.headless,
       defaultViewport: {
         width: 900,
         height: 450,
