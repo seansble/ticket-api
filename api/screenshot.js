@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
     // 3) Headless Chrome 실행
     browser = await puppeteer.launch({
       args: chrome.args,
-      executablePath: await chrome.executablePath,  // chrome-aws-lambda 전용
+      executablePath: await chrome.executablePath,
       headless: chrome.headless,
       defaultViewport: {
         width: 900,
@@ -58,7 +58,7 @@ module.exports = async (req, res) => {
     if (selector) {
       const el = await page.$(selector);
       if (!el) {
-        throw new Error(selector "${selector}" 를 찾을 수 없습니다.);
+        throw new Error(`selector "${selector}" 를 찾을 수 없습니다.`);
       }
       buffer = await el.screenshot({ type: 'png' });
     } else {
